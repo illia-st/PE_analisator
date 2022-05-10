@@ -1,0 +1,10 @@
+^D:\PROGRAMMING\C++\CMAKE_PROJECTS\PE_ANALISATOR\BUILD\CMAKEFILES\90E25BB02055527004160612C566B56F\GENERATE.STAMP.RULE
+setlocal
+"C:\Program Files\CMake\bin\cmake.exe" -SD:/programming/c++/CMake_projects/PE_analisator -BD:/programming/c++/CMake_projects/PE_analisator/build --check-stamp-list CMakeFiles/generate.stamp.list --vs-solution-file D:/programming/c++/CMake_projects/PE_analisator/build/PE_analisator.sln
+if %errorlevel% neq 0 goto :cmEnd
+:cmEnd
+endlocal & call :cmErrorLevel %errorlevel% & goto :cmDone
+:cmErrorLevel
+exit /b %1
+:cmDone
+if %errorlevel% neq 0 goto :VCEnd
