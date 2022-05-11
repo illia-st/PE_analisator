@@ -23,8 +23,10 @@ int main() {
             break;
         case 64:{
             PE64FILE file(path_to_executable, PpeFile);
-            file.PrintInfo();
+            file.ParseFile();
             fclose(PpeFile);
+            file.PrintImporTable();
+            std::cout << "Amount of the WinAPIs which name contains letter \"W\" > " << file.Get_W_Counter() << std::endl;
             break;
         }
         default:

@@ -3,12 +3,31 @@
 
 PE64FILE::PE64FILE(char* _NAME, FILE* Ppefile): NAME(_NAME), Ppefile(Ppefile){  }
 
-void PE64FILE::PrintInfo(){
-    ParseDOSHeader();
+void PE64FILE::PrintImporTable() const{
+	for(const auto& i: functions){
+		std::cout << "DLL name > " << i.first << std::endl;
+		std::cout << "Functions: " << std::endl;
+		int counter = 1;
+		for(const auto& j: i.second){
+			std::cout << "\t" << counter++ << ") " << j << std::endl;
+		}
+	}
+}
+uint32_t PE64FILE::Get_W_Counter() const{
+	return w_counter;
+}
+void PE64FILE::W_Searcher(const std::string& api){
+	auto end_ = api.end();
+	auto it = std::find(api.begin(), end_, 'W');
+	w_counter = it == end_ ? w_counter : w_counter + 1;
+}
+
+void PE64FILE::ParseFile(){
+	ParseDOSHeader();
     ParseNTHeaders();
     ParseSectionHeaders();
     ParseImportDirectory();
-    PrintImportTableInfo();
+	SaveInfo();
 }
 
 
@@ -92,11 +111,7 @@ void PE64FILE::ParseImportDirectory() {
 	}
 	// а ось тут в нас вже є масив, що містить всі імортовані бібліотеки
 }
-void PE64FILE::PrintImportTableInfo() {
-	
-	printf(" IMPORT TABLE:\n");
-	printf(" ----------------\n\n");
-
+void PE64FILE::SaveInfo() {
 	for (int i = 0; i < _import_directory_count; i++) {
 		DWORD NameAddr = resolve(PEFILE_IMPORT_TABLE[i].Name, locate(PEFILE_IMPORT_TABLE[i].Name));
 		int NameSize = 0;
@@ -116,24 +131,13 @@ void PE64FILE::PrintImportTableInfo() {
 		char* Name = new char[NameSize + 2];
 		fseek(Ppefile, NameAddr, SEEK_SET);
 		fread(Name, (NameSize * sizeof(char)) + 1, 1, Ppefile);
-		printf("   * %s:\n", Name);
+		std::string dll = static_cast<std::string>(Name);
+		dlls.insert(dll);
 		delete[] Name;
-
-		printf("       ILT RVA: 0x%X\n", PEFILE_IMPORT_TABLE[i].DUMMYUNIONNAME.OriginalFirstThunk);
-		printf("       IAT RVA: 0x%X\n", PEFILE_IMPORT_TABLE[i].FirstThunk);
-
-		if (PEFILE_IMPORT_TABLE[i].TimeDateStamp == 0) {
-			printf("       Bound: FALSE\n");
-		}
-		else if (PEFILE_IMPORT_TABLE[i].TimeDateStamp == -1) {
-			printf("       Bound: TRUE\n");
-		}
-
-		printf("\n");
 
 		DWORD ILTAddr = resolve(PEFILE_IMPORT_TABLE[i].DUMMYUNIONNAME.OriginalFirstThunk, locate(PEFILE_IMPORT_TABLE[i].DUMMYUNIONNAME.OriginalFirstThunk));
 		int entrycounter = 0;
-
+		std::vector<std::string> func;
 		while (true) {
 
 			ILT_ENTRY_64 entry;
@@ -155,28 +159,23 @@ void PE64FILE::PrintImportTableInfo() {
 			if (flag == 0x0 && HintRVA == 0x0 && ordinal == 0x0) {
 				break;
 			}
-
-			printf("\n       Entry:\n");
-
+			
 			if (flag == 0x0) {
 				___IMAGE_IMPORT_BY_NAME hint;
 
 				DWORD HintAddr = resolve(HintRVA, locate(HintRVA));
 				fseek(Ppefile, HintAddr, SEEK_SET);
 				fread(&hint, sizeof(___IMAGE_IMPORT_BY_NAME), 1, Ppefile);
-				printf("         Name: %s\n", hint.Name);
-				printf("         Hint RVA: 0x%X\n", HintRVA);
-				printf("         Hint: 0x%X\n", hint.Hint);
-			}
-			else if (flag == 1) {
-				printf("         Ordinal: 0x%X\n", ordinal);
+				std::string function =  static_cast<std::string>(hint.Name);
+				func.push_back(function);
+				W_Searcher(function);
 			}
 
 			entrycounter++;
 		}
 
-		printf("\n   ----------------------\n\n");
-
+		std::sort(func.begin(), func.end());
+		functions[dll] = func;
 	}
 
 }

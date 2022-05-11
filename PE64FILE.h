@@ -1,13 +1,25 @@
 #pragma once
 #include <iostream>
+#include <vector>
+#include <string>
+#include <map>
+#include <set>
+#include <algorithm>
 #include "winntdef.h"
 #include "custom_structs.h"
 
 class PE64FILE{
 public:
     PE64FILE(char* _NAME, FILE* Ppefile);
-    void PrintInfo();
+    void ParseFile();
+    void PrintImporTable() const;
+    uint32_t Get_W_Counter() const;
 private:
+    std::set<std::string> dlls;
+    std::map<std::string, std::vector<std::string>> functions;
+    
+    uint32_t w_counter = 0;
+
     char* NAME;
     FILE* Ppefile;
     int _import_directory_count, _import_directory_size;
@@ -38,12 +50,11 @@ private:
 
     int locate(DWORD VA);
     DWORD resolve(DWORD VA, int index);
-   
-    void ParseFile();
+
+    void W_Searcher(const std::string& api);
     void ParseDOSHeader();// розпарсили дос хедери, маємо тепер місце зсуву на початок PE-header
     void ParseNTHeaders();// парсимо NT хедери
     void ParseSectionHeaders();
     void ParseImportDirectory();
-
-    void PrintImportTableInfo();
+    void SaveInfo();
 };
